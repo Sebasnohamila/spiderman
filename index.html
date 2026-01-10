@@ -24,7 +24,7 @@
                 display: none; 
                 position: fixed;
                 bottom: 15px; 
-                left: 15px;   
+                left: 15px;    
                 z-index: 9998;
                 background-color: transparent;
                 padding: 0;
@@ -33,7 +33,7 @@
                 transition: transform 0.1s;
             }
             #whatsapp-button img {
-                width: 30px;  
+                width: 30px;   
                 height: 30px;
                 filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.5)); 
             }
@@ -47,7 +47,7 @@
                 init: function () {
                     this.marker = document.querySelector("#markerA");
                     this.hud = document.querySelector("#hud-container");
-                    this.vid = document.querySelector("#vid");
+                    // Eliminada referencia al video
                     this.model = document.querySelector("#animatedModel");
                     this.waButton = document.querySelector("#whatsapp-button");
                     
@@ -66,7 +66,8 @@
                         this.hud.setAttribute('visible', 'true');
                         this.waButton.style.display = "block"; 
                         
-                        this.vid.play();
+                        // Eliminado this.vid.play();
+                        
                         if (this.model) this.model.setAttribute('animation-mixer', 'timeScale: 1');
                     });
 
@@ -94,21 +95,17 @@
                             this.startX = e.touches[0].clientX;
                             this.startY = e.touches[0].clientY;
 
-                            // --- CAMBIO NUEVO: RESTRICCIÓN HORIZONTAL (EJE Y) ---
-                            // Esto evita que se vea la parte de atrás (espalda)
+                            // --- RESTRICCIÓN HORIZONTAL (EJE Y) ---
                             var newRotationY = this.model.object3D.rotation.y + (deltaX * 0.01);
                             
-                            // LÍMITES Y: -0.8 (Izq) a 0.8 (Der) -> Aprox 45 grados a cada lado
                             const minY = -0.8;
                             const maxY = 0.8;
                             this.model.object3D.rotation.y = Math.min(Math.max(newRotationY, minY), maxY);
 
 
                             // --- RESTRICCIÓN VERTICAL (EJE X) ---
-                            // Esto evita que se vea la parte inferior (panza)
                             var newRotationX = this.model.object3D.rotation.x + (deltaY * 0.01);
                             
-                            // LÍMITES X: 0.0 (Horizonte) a 0.8 (Arriba)
                             const minX = 0.0; 
                             const maxX = 0.8;
                             this.model.object3D.rotation.x = Math.min(Math.max(newRotationX, minX), maxX);
@@ -136,27 +133,7 @@
                 }
             });
 
-            AFRAME.registerComponent('fix-video-size', {
-                init: function () {
-                    var videoEl = document.querySelector("#vid");
-                    var planeEl = this.el; 
-                    
-                    var applySize = function() {
-                        if (videoEl.videoWidth > 0 && videoEl.videoHeight > 0) {
-                            var aspectRatio = videoEl.videoHeight / videoEl.videoWidth;
-                            var isPortrait = window.innerHeight > window.innerWidth;
-                            
-                            var scaleFactor = isPortrait ? 3.1 : 5; 
-                            
-                            planeEl.setAttribute('width', scaleFactor); 
-                            planeEl.setAttribute('height', aspectRatio * scaleFactor);
-                        }
-                    };
-                    videoEl.addEventListener('loadedmetadata', applySize);
-                    if (videoEl.readyState >= 1) applySize();
-                    window.addEventListener('resize', applySize);
-                }
-            });
+            // Eliminado el componente fix-video-size porque ya no hay video
 
             window.addEventListener('arjs-video-loaded', function(e) {
                 setTimeout(() => { document.body.classList.add('arjs-ready'); }, 1000);
@@ -184,7 +161,6 @@
             embedded 
         >
             <a-assets>
-                <video id="vid" src="assets/asset.mp4" preload="auto" loop crossorigin webkit-playsinline autoplay playsinline></video>
                 <a-asset-item id="miModelo" src="assets/mi-modelo.glb"></a-asset-item>
             </a-assets>
 
@@ -194,23 +170,15 @@
             <a-entity camera>
                 <a-entity id="hud-container" visible="false" position="0 0 -6">
                     
-                    <a-video
-                        src="#vid"
-                        fix-video-size
-                        position="0 1.5 -2" 
-                        material="shader: flat; src: #vid; depthWrite: false;"
-                    ></a-video>
-
                     <a-entity
                         id="animatedModel"
                         gltf-model="#miModelo"
                         scale="0.02 0.02 0.02"
-                        position="0 -1 0" 
+                        position="0 0 0" 
                         rotation="0 0 0" 
                         animation-mixer="loop: repeat"
                     ></a-entity>
-
-                </a-entity>
+                    </a-entity>
             </a-entity>
 
             <a-marker type="pattern" preset="custom" url="assets/marker.patt" id="markerA">
