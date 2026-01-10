@@ -1,84 +1,88 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>AR Proyecto - Audio Fantasma</title>
+<head>
+    <title>AR.js con Sketchfab Embed</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-    <script src="https://raw.githack.com/fcor/arjs-gestures/master/dist/gestures.js"></script>
-  </head>
-
-  <body style="margin: 0; overflow: hidden;">
     
-    <a-scene
-      embedded
-      arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
-      renderer="logarithmicDepthBuffer: true;"
-      vr-mode-ui="enabled: false"
-      gesture-detector
-      id="scene"
-    >
-      
-      <a-assets>
-        <a-asset-item id="modelo3d" src="./tumodelo.glb"></a-asset-item>
-        
-        <video 
-            id="videoFantasma" 
-            src="./video_o_musica.mp4" 
-            preload="auto" 
-            response-type="arraybuffer" 
-            loop 
-            crossorigin 
-            webkit-playsinline 
-            playsinline>
-        </video>
-      </a-assets>
+    <style>
+        /* Estilos para ocultar y centrar el contenedor de Sketchfab */
+        #sketchfab-container {
+            display: none; /* Oculto por defecto */
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%; /* Ajusta el tamaño según prefieras */
+            height: 60%;
+            z-index: 9999;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: 0 0 20px rgba(0,255,255,0.5);
+        }
 
-      <a-marker
-        type="pattern"
-        url="./tumarcador.patt"
-        raycaster="objects: .clickable"
-        emitevents="true"
-        cursor="fuse: false; rayOrigin: mouse;"
-        id="markerA"
-      >
-        <a-entity
-          id="bowser-model"
-          gltf-model="#modelo3d"
-          position="0 0 0"
-          scale="0.5 0.5 0.5"
-          class="clickable"
-          gesture-handler
-        >
-        </a-entity>
+        /* Ajustamos el iframe para que llene el contenedor */
+        .sketchfab-embed-wrapper, iframe {
+            width: 100% !important;
+            height: 100% !important;
+            border-radius: 5px;
+        }
+
+        /* Botón opcional para cerrar manual si molesta */
+        #close-btn {
+            position: absolute;
+            top: -15px;
+            right: -15px;
+            background: red;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body style="margin: 0; overflow: hidden;">
+
+    <div id="sketchfab-container">
+        <button id="close-btn" onclick="document.getElementById('sketchfab-container').style.display='none'">X</button>
         
+        <div class="sketchfab-embed-wrapper"> 
+            <iframe title="Majin Vegeta final explosion" frameborder="0" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" allow="autoplay; fullscreen; xr-spatial-tracking" xr-spatial-tracking execution-while-out-of-viewport execution-while-not-rendered web-share src="https://sketchfab.com/models/88801802829f404bae2063a6cb48e2d6/embed?autostart=1"> </iframe> 
+        </div>
+        </div>
+
+    <a-scene embedded arjs>
+        
+        <a-marker type="pattern" url="marker.patt" id="my-marker">
+            <a-box position="0 0.5 0" material="opacity: 0.5; color: #F70087;"></a-box>
         </a-marker>
 
-      <a-entity camera></a-entity>
+        <a-entity camera></a-entity>
     </a-scene>
 
     <script>
-      var video = document.getElementById("videoFantasma");
-      var marker = document.getElementById("markerA");
+        // Lógica para detectar el marcador
+        var marker = document.querySelector('#my-marker');
+        var overlay = document.querySelector('#sketchfab-container');
 
-      // Cuando aparece el marcador
-      marker.addEventListener("markerFound", function () {
-          console.log("Marcador detectado: Reproduciendo sonido...");
-          video.play();
-      });
+        // Cuando encuentra el marcador
+        marker.addEventListener('markerFound', function() {
+            console.log("Marcador encontrado");
+            overlay.style.display = 'block';
+        });
 
-      // Cuando se va el marcador
-      marker.addEventListener("markerLost", function () {
-          console.log("Marcador perdido: Pausando...");
-          video.pause();
-          // video.currentTime = 0; // Descomenta esto si quieres que reinicie siempre
-      });
-      
-      // SOLUCIÓN PARA MOVILES:
-      // Si el navegador bloquea el sonido, este código lo desbloquea
-      // apenas toques la pantalla para rotar la figura.
-      window.addEventListener('click', function () {
-          video.play();
-      });
+        // Cuando pierde el marcador
+        marker.addEventListener('markerLost', function() {
+            console.log("Marcador perdido");
+            // Opcional: puedes comentar la siguiente línea si quieres que el modelo se quede 
+            // en pantalla una vez encontrado, aunque quites la cámara del marcador.
+            overlay.style.display = 'none'; 
+        });
     </script>
-  </body>
+</body>
 </html>
