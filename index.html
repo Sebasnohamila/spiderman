@@ -1,4 +1,4 @@
-<!doctype html>
+\<!doctype html>
 <html>
     <head>
         <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
@@ -47,7 +47,10 @@
                 init: function () {
                     this.marker = document.querySelector("#markerA");
                     this.hud = document.querySelector("#hud-container");
-                    // Eliminada referencia al video
+                    
+                    // 1. RECUPERAMOS LA REFERENCIA AL VIDEO PARA EL AUDIO
+                    this.vid = document.querySelector("#vid");
+                    
                     this.model = document.querySelector("#animatedModel");
                     this.waButton = document.querySelector("#whatsapp-button");
                     
@@ -66,13 +69,22 @@
                         this.hud.setAttribute('visible', 'true');
                         this.waButton.style.display = "block"; 
                         
-                        // Eliminado this.vid.play();
-                        
+                        // 2. REPRODUCIMOS EL VIDEO (SOLO SE ESCUCHARÁ PORQUE NO HAY PANTALLA VISUAL)
+                        if(this.vid){
+                            this.vid.play().catch(e => console.log("Error reproduciendo audio:", e));
+                            this.vid.volume = 1.0; // Aseguramos volumen
+                        }
+
                         if (this.model) this.model.setAttribute('animation-mixer', 'timeScale: 1');
                     });
 
                     window.addEventListener('touchstart', (e) => {
                         if (!this.isUnlocked) return;
+                        
+                        // Hack para navegadores (iOS) que bloquean audio si no hay toque previo
+                        if(this.vid && this.vid.paused){
+                            this.vid.play();
+                        }
 
                         if(e.touches.length === 1) {
                             this.startX = e.touches[0].clientX;
@@ -95,17 +107,14 @@
                             this.startX = e.touches[0].clientX;
                             this.startY = e.touches[0].clientY;
 
-                            // --- RESTRICCIÓN HORIZONTAL (EJE Y) ---
+                            // RESTRICCIÓN HORIZONTAL
                             var newRotationY = this.model.object3D.rotation.y + (deltaX * 0.01);
-                            
                             const minY = -0.8;
                             const maxY = 0.8;
                             this.model.object3D.rotation.y = Math.min(Math.max(newRotationY, minY), maxY);
 
-
-                            // --- RESTRICCIÓN VERTICAL (EJE X) ---
+                            // RESTRICCIÓN VERTICAL
                             var newRotationX = this.model.object3D.rotation.x + (deltaY * 0.01);
-                            
                             const minX = 0.0; 
                             const maxX = 0.8;
                             this.model.object3D.rotation.x = Math.min(Math.max(newRotationX, minX), maxX);
@@ -133,8 +142,6 @@
                 }
             });
 
-            // Eliminado el componente fix-video-size porque ya no hay video
-
             window.addEventListener('arjs-video-loaded', function(e) {
                 setTimeout(() => { document.body.classList.add('arjs-ready'); }, 1000);
             });
@@ -161,6 +168,7 @@
             embedded 
         >
             <a-assets>
+                <video id="vid" src="assets/asset.mp4" preload="auto" loop crossorigin webkit-playsinline playsinline></video>
                 <a-asset-item id="miModelo" src="assets/mi-modelo.glb"></a-asset-item>
             </a-assets>
 
@@ -178,7 +186,8 @@
                         rotation="0 0 0" 
                         animation-mixer="loop: repeat"
                     ></a-entity>
-                    </a-entity>
+
+                </a-entity>
             </a-entity>
 
             <a-marker type="pattern" preset="custom" url="assets/marker.patt" id="markerA">
