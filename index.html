@@ -1,88 +1,189 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-    <title>AR.js con Sketchfab Embed</title>
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-    
-    <style>
-        /* Estilos para ocultar y centrar el contenedor de Sketchfab */
-        #sketchfab-container {
-            display: none; /* Oculto por defecto */
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80%; /* Ajusta el tamaño según prefieras */
-            height: 60%;
-            z-index: 9999;
-            background: rgba(0, 0, 0, 0.8);
-            border-radius: 10px;
-            padding: 10px;
-            box-shadow: 0 0 20px rgba(0,255,255,0.5);
-        }
-
-        /* Ajustamos el iframe para que llene el contenedor */
-        .sketchfab-embed-wrapper, iframe {
-            width: 100% !important;
-            height: 100% !important;
-            border-radius: 5px;
-        }
-
-        /* Botón opcional para cerrar manual si molesta */
-        #close-btn {
-            position: absolute;
-            top: -15px;
-            right: -15px;
-            background: red;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-    </style>
-</head>
-
-<body style="margin: 0; overflow: hidden;">
-
-    <div id="sketchfab-container">
-        <button id="close-btn" onclick="document.getElementById('sketchfab-container').style.display='none'">X</button>
+    <head>
+        <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
         
-        <div class="sketchfab-embed-wrapper"> 
-            <iframe title="Majin Vegeta final explosion" frameborder="0" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" allow="autoplay; fullscreen; xr-spatial-tracking" xr-spatial-tracking execution-while-out-of-viewport execution-while-not-rendered web-share src="https://sketchfab.com/models/88801802829f404bae2063a6cb48e2d6/embed?autostart=1"> </iframe> 
-        </div>
-        </div>
+        <script src="https://aframe.io/releases/1.0.4/aframe.min.js"></script>
+        <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+        <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
 
-    <a-scene embedded arjs>
-        
-        <a-marker type="pattern" url="marker.patt" id="my-marker">
-            <a-box position="0 0.5 0" material="opacity: 0.5; color: #F70087;"></a-box>
-        </a-marker>
+        <style>
+            body { margin: 0; overflow: hidden; touch-action: none; font-family: Arial, sans-serif;}
+            
+            #splash-screen {
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background-color: white; z-index: 9999;
+                display: flex; justify-content: center; align-items: center;
+                transition: opacity 1s ease-out;
+            }
+            #splash-screen img { max-width: 60%; height: auto; }
+            .arjs-ready #splash-screen { opacity: 0; pointer-events: none; }
 
-        <a-entity camera></a-entity>
-    </a-scene>
+            /* ESTILOS DEL BOTÓN DE WHATSAPP */
+            #whatsapp-button {
+                display: none; 
+                position: fixed;
+                bottom: 15px; 
+                left: 15px;    
+                z-index: 9998;
+                background-color: transparent;
+                padding: 0;
+                border: none;
+                transform: none;
+                transition: transform 0.1s;
+            }
+            #whatsapp-button img {
+                width: 30px;   
+                height: 30px;
+                filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.5)); 
+            }
+            #whatsapp-button:active {
+                transform: scale(0.9); 
+            }
+        </style>
 
-    <script>
-        // Lógica para detectar el marcador
-        var marker = document.querySelector('#my-marker');
-        var overlay = document.querySelector('#sketchfab-container');
+        <script>
+            AFRAME.registerComponent('master-controller', {
+                init: function () {
+                    this.marker = document.querySelector("#markerA");
+                    this.hud = document.querySelector("#hud-container");
+                    // Eliminada referencia al video
+                    this.model = document.querySelector("#animatedModel");
+                    this.waButton = document.querySelector("#whatsapp-button");
+                    
+                    this.isUnlocked = false; 
+                    
+                    this.startX = 0;
+                    this.startY = 0;
+                    this.initialDistance = 0;
+                    this.initialScaleVector = new THREE.Vector3();
 
-        // Cuando encuentra el marcador
-        marker.addEventListener('markerFound', function() {
-            console.log("Marcador encontrado");
-            overlay.style.display = 'block';
-        });
+                    this.marker.addEventListener('markerFound', () => {
+                        if (this.isUnlocked) return;
+                        console.log("¡Marcador detectado!");
+                        this.isUnlocked = true;
+                        
+                        this.hud.setAttribute('visible', 'true');
+                        this.waButton.style.display = "block"; 
+                        
+                        // Eliminado this.vid.play();
+                        
+                        if (this.model) this.model.setAttribute('animation-mixer', 'timeScale: 1');
+                    });
 
-        // Cuando pierde el marcador
-        marker.addEventListener('markerLost', function() {
-            console.log("Marcador perdido");
-            // Opcional: puedes comentar la siguiente línea si quieres que el modelo se quede 
-            // en pantalla una vez encontrado, aunque quites la cámara del marcador.
-            overlay.style.display = 'none'; 
-        });
-    </script>
-</body>
+                    window.addEventListener('touchstart', (e) => {
+                        if (!this.isUnlocked) return;
+
+                        if(e.touches.length === 1) {
+                            this.startX = e.touches[0].clientX;
+                            this.startY = e.touches[0].clientY;
+                        } else if (e.touches.length === 2) {
+                            var dx = e.touches[0].clientX - e.touches[1].clientX;
+                            var dy = e.touches[0].clientY - e.touches[1].clientY;
+                            this.initialDistance = Math.sqrt(dx * dx + dy * dy);
+                            this.initialScaleVector.copy(this.model.object3D.scale);
+                        }
+                    });
+
+                    window.addEventListener('touchmove', (e) => {
+                        if (!this.isUnlocked) return;
+                        
+                        if(e.touches.length === 1) {
+                            var deltaX = e.touches[0].clientX - this.startX;
+                            var deltaY = e.touches[0].clientY - this.startY;
+
+                            this.startX = e.touches[0].clientX;
+                            this.startY = e.touches[0].clientY;
+
+                            // --- RESTRICCIÓN HORIZONTAL (EJE Y) ---
+                            var newRotationY = this.model.object3D.rotation.y + (deltaX * 0.01);
+                            
+                            const minY = -0.8;
+                            const maxY = 0.8;
+                            this.model.object3D.rotation.y = Math.min(Math.max(newRotationY, minY), maxY);
+
+
+                            // --- RESTRICCIÓN VERTICAL (EJE X) ---
+                            var newRotationX = this.model.object3D.rotation.x + (deltaY * 0.01);
+                            
+                            const minX = 0.0; 
+                            const maxX = 0.8;
+                            this.model.object3D.rotation.x = Math.min(Math.max(newRotationX, minX), maxX);
+                        } 
+                        else if (e.touches.length === 2 && this.initialDistance > 0) {
+                             var dx = e.touches[0].clientX - e.touches[1].clientX;
+                             var dy = e.touches[0].clientY - e.touches[1].clientY;
+                             var currentDistance = Math.sqrt(dx * dx + dy * dy);
+                             var scaleFactor = currentDistance / this.initialDistance;
+
+                             var newX = this.initialScaleVector.x * scaleFactor;
+                             var newY = this.initialScaleVector.y * scaleFactor;
+                             var newZ = this.initialScaleVector.z * scaleFactor;
+
+                             const minScale = 0.005; 
+                             const maxScale = 0.35;  
+
+                             newX = Math.min(Math.max(newX, minScale), maxScale);
+                             newY = Math.min(Math.max(newY, minScale), maxScale);
+                             newZ = Math.min(Math.max(newZ, minScale), maxScale);
+
+                             this.model.object3D.scale.set(newX, newY, newZ);
+                        }
+                    });
+                }
+            });
+
+            // Eliminado el componente fix-video-size porque ya no hay video
+
+            window.addEventListener('arjs-video-loaded', function(e) {
+                setTimeout(() => { document.body.classList.add('arjs-ready'); }, 1000);
+            });
+            setTimeout(() => { document.body.classList.add('arjs-ready'); }, 6000);
+        </script>
+    </head>
+
+    <body>
+        <div id="splash-screen"><img src="assets/logo.png" alt="Cargando Bhastian AR..."></div>
+
+        <a href="https://wa.me/593983088889?text=Hola%20Bhastian,%20vi%20su%20experiencia%20AR%20y%20me%20interesa." 
+           target="_blank" 
+           id="whatsapp-button">
+           <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp Icon">
+        </a>
+
+        <a-scene
+            master-controller
+            vr-mode-ui="enabled: false"
+            loading-screen="enabled: false;"
+            arjs='sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;'
+            renderer="logarithmicDepthBuffer: true; colorManagement: true; antialias: true;" 
+            id="scene" 
+            embedded 
+        >
+            <a-assets>
+                <a-asset-item id="miModelo" src="assets/mi-modelo.glb"></a-asset-item>
+            </a-assets>
+
+            <a-entity light="type: ambient; intensity: 1.2; color: #ffffff"></a-entity>
+            <a-entity light="type: directional; intensity: 1.5; position="2 4 4"></a-entity>
+
+            <a-entity camera>
+                <a-entity id="hud-container" visible="false" position="0 0 -6">
+                    
+                    <a-entity
+                        id="animatedModel"
+                        gltf-model="#miModelo"
+                        scale="0.02 0.02 0.02"
+                        position="0 0 0" 
+                        rotation="0 0 0" 
+                        animation-mixer="loop: repeat"
+                    ></a-entity>
+                    </a-entity>
+            </a-entity>
+
+            <a-marker type="pattern" preset="custom" url="assets/marker.patt" id="markerA">
+            </a-marker>
+
+        </a-scene>
+    </body>
 </html>
