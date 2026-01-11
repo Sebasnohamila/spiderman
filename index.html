@@ -25,7 +25,7 @@
                 display: none; 
                 position: fixed;
                 bottom: 15px; 
-                left: 15px;     
+                left: 15px;      
                 z-index: 9998;
                 background-color: transparent;
                 padding: 0;
@@ -45,14 +45,12 @@
 
         <script>
             // --- COMPONENTE 1: ARREGLAR MATERIALES NEGROS ---
-            // Este script fuerza al modelo a no ser metálico para que no se vea negro
             AFRAME.registerComponent('fix-materials', {
                 init: function () {
                     this.el.addEventListener('model-loaded', function (e) {
                         var mesh = e.detail.model;
                         mesh.traverse(function (node) {
                             if (node.isMesh && node.material) {
-                                // Quita el metal y ajusta la rugosidad para que la luz funcione bien
                                 node.material.metalness = 0;
                                 node.material.roughness = 1;
                                 node.material.needsUpdate = true;
@@ -140,7 +138,17 @@
                              var dx = e.touches[0].clientX - e.touches[1].clientX;
                              var dy = e.touches[0].clientY - e.touches[1].clientY;
                              var currentDistance = Math.sqrt(dx * dx + dy * dy);
+                             
+                             // Cálculo original de escala
                              var scaleFactor = currentDistance / this.initialDistance;
+
+                             // --- BLOQUEO DE ALEJAMIENTO (ZOOM OUT) ---
+                             // Si el factor es menor a 1 (significa que intentas encoger),
+                             // forzamos a 1 para que se quede del tamaño que ya tiene.
+                             if (scaleFactor < 1) {
+                                 scaleFactor = 1;
+                             }
+                             // -----------------------------------------
 
                              var newX = this.initialScaleVector.x * scaleFactor;
                              var newY = this.initialScaleVector.y * scaleFactor;
@@ -162,7 +170,7 @@
             window.addEventListener('arjs-video-loaded', function(e) {
                 setTimeout(() => { document.body.classList.add('arjs-ready'); }, 1000);
             });
-            // Fallback por si acaso
+            // Fallback
             setTimeout(() => { document.body.classList.add('arjs-ready'); }, 6000);
         </script>
     </head>
