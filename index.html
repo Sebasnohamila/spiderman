@@ -1,4 +1,4 @@
-\<!doctype html>
+<!doctype html>
 <html>
     <head>
         <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
@@ -10,6 +10,7 @@
         <style>
             body { margin: 0; overflow: hidden; touch-action: none; font-family: Arial, sans-serif;}
             
+            /* PANTALLA DE CARGA */
             #splash-screen {
                 position: fixed; top: 0; left: 0; width: 100%; height: 100%;
                 background-color: white; z-index: 9999;
@@ -24,7 +25,7 @@
                 display: none; 
                 position: fixed;
                 bottom: 15px; 
-                left: 15px;    
+                left: 15px;     
                 z-index: 9998;
                 background-color: transparent;
                 padding: 0;
@@ -43,14 +44,32 @@
         </style>
 
         <script>
+            // --- COMPONENTE 1: ARREGLAR MATERIALES NEGROS ---
+            // Este script fuerza al modelo a no ser metálico para que no se vea negro
+            AFRAME.registerComponent('fix-materials', {
+                init: function () {
+                    this.el.addEventListener('model-loaded', function (e) {
+                        var mesh = e.detail.model;
+                        mesh.traverse(function (node) {
+                            if (node.isMesh && node.material) {
+                                // Quita el metal y ajusta la rugosidad para que la luz funcione bien
+                                node.material.metalness = 0;
+                                node.material.roughness = 1;
+                                node.material.needsUpdate = true;
+                            }
+                        });
+                        console.log("Materiales corregidos (Metalness removido)");
+                    });
+                }
+            });
+
+            // --- COMPONENTE 2: CONTROLADOR PRINCIPAL (Gestos y Video) ---
             AFRAME.registerComponent('master-controller', {
                 init: function () {
                     this.marker = document.querySelector("#markerA");
                     this.hud = document.querySelector("#hud-container");
                     
-                    // 1. RECUPERAMOS LA REFERENCIA AL VIDEO PARA EL AUDIO
                     this.vid = document.querySelector("#vid");
-                    
                     this.model = document.querySelector("#animatedModel");
                     this.waButton = document.querySelector("#whatsapp-button");
                     
@@ -69,10 +88,9 @@
                         this.hud.setAttribute('visible', 'true');
                         this.waButton.style.display = "block"; 
                         
-                        // 2. REPRODUCIMOS EL VIDEO (SOLO SE ESCUCHARÁ PORQUE NO HAY PANTALLA VISUAL)
                         if(this.vid){
                             this.vid.play().catch(e => console.log("Error reproduciendo audio:", e));
-                            this.vid.volume = 1.0; // Aseguramos volumen
+                            this.vid.volume = 1.0; 
                         }
 
                         if (this.model) this.model.setAttribute('animation-mixer', 'timeScale: 1');
@@ -81,7 +99,6 @@
                     window.addEventListener('touchstart', (e) => {
                         if (!this.isUnlocked) return;
                         
-                        // Hack para navegadores (iOS) que bloquean audio si no hay toque previo
                         if(this.vid && this.vid.paused){
                             this.vid.play();
                         }
@@ -107,13 +124,13 @@
                             this.startX = e.touches[0].clientX;
                             this.startY = e.touches[0].clientY;
 
-                            // RESTRICCIÓN HORIZONTAL
+                            // Rotación Y (Horizontal)
                             var newRotationY = this.model.object3D.rotation.y + (deltaX * 0.01);
                             const minY = -0.8;
                             const maxY = 0.8;
                             this.model.object3D.rotation.y = Math.min(Math.max(newRotationY, minY), maxY);
 
-                            // RESTRICCIÓN VERTICAL
+                            // Rotación X (Vertical)
                             var newRotationX = this.model.object3D.rotation.x + (deltaY * 0.01);
                             const minX = 0.0; 
                             const maxX = 0.8;
@@ -145,6 +162,7 @@
             window.addEventListener('arjs-video-loaded', function(e) {
                 setTimeout(() => { document.body.classList.add('arjs-ready'); }, 1000);
             });
+            // Fallback por si acaso
             setTimeout(() => { document.body.classList.add('arjs-ready'); }, 6000);
         </script>
     </head>
@@ -172,8 +190,8 @@
                 <a-asset-item id="miModelo" src="assets/mi-modelo.glb"></a-asset-item>
             </a-assets>
 
-            <a-entity light="type: ambient; intensity: 1.2; color: #ffffff"></a-entity>
-            <a-entity light="type: directional; intensity: 1.5; position="2 4 4"></a-entity>
+            <a-entity light="type: ambient; intensity: 1.5; color: #ffffff"></a-entity>
+            <a-entity light="type: directional; intensity: 2" position="2 4 4"></a-entity>
 
             <a-entity camera>
                 <a-entity id="hud-container" visible="false" position="0 0 -6">
@@ -185,6 +203,7 @@
                         position="0 0 0" 
                         rotation="0 0 0" 
                         animation-mixer="loop: repeat"
+                        fix-materials
                     ></a-entity>
 
                 </a-entity>
