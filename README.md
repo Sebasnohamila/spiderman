@@ -1,2 +1,0 @@
-# naruto
-proyecto naruto
