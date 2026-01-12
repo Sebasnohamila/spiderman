@@ -3,44 +3,117 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-        <title>Visor 3D Bhastian</title>
+        <title>Visor 3D Bhastian con Rayos</title>
 
         <script src="https://aframe.io/releases/1.0.4/aframe.min.js"></script>
         <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
 
         <style>
             body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; background-color: #111; }
-            
-            /* --- INTERFAZ IGUAL A LA ANTERIOR --- */
-            #overlay-container {
-                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-                background: radial-gradient(circle, #ffffff 0%, #e0e0e0 100%);
-                z-index: 9999;
-                display: flex; flex-direction: column; justify-content: center; align-items: center;
-                transition: opacity 0.8s ease-out;
-            }
+            /* Estilos iguales a los anteriores (ocultos para ahorrar espacio) */
+            #overlay-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #ffffff 0%, #e0e0e0 100%); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.8s ease-out; }
             #overlay-logo { max-width: 50%; height: auto; margin-bottom: 20px; }
             #loading-text { font-size: 16px; color: #666; animation: blink 1.5s infinite; }
-            
-            #start-button {
-                display: none; width: 130px; height: 130px;
-                background: radial-gradient(circle, #d4af37 0%, #b8962e 100%);
-                color: white; border-radius: 50%; border: 4px solid #fff;
-                font-size: 16px; font-weight: bold; cursor: pointer;
-                box-shadow: 0 0 20px rgba(212, 175, 55, 0.6);
-                animation: pulse 2s infinite;
-            }
-
+            #start-button { display: none; width: 130px; height: 130px; background: radial-gradient(circle, #d4af37 0%, #b8962e 100%); color: white; border-radius: 50%; border: 4px solid #fff; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 0 20px rgba(212, 175, 55, 0.6); animation: pulse 2s infinite; }
             @keyframes blink { 0%,100% {opacity:1} 50% {opacity:0.5} }
             @keyframes pulse { 0% {transform: scale(1);} 50% {transform: scale(1.05);} 100% {transform: scale(1);} }
             .fade-out { opacity: 0; pointer-events: none; }
-
             #whatsapp-button { display: none; position: fixed; bottom: 20px; left: 20px; z-index: 9998; }
             #whatsapp-button img { width: 50px; height: 50px; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)); }
         </style>
 
         <script>
-            // GESTOR DE LA APP (Carga y Audio)
+            // --- NUEVO COMPONENTE: SISTEMA DE RAYOS ---
+            AFRAME.registerComponent('lightning-system', {
+                schema: {
+                    color: { type: 'color', default: '#00ffff' }, // Color cian eléctrico
+                    interval: { default: 1500 }, // Cada cuánto tiempo aparece un rayo (ms)
+                    enabled: { default: false } // Empieza apagado hasta que se entra
+                },
+                init: function () {
+                    this.timer = null;
+                    // Escuchar cuando el usuario hace click en "Ver Experiencia"
+                    document.querySelector("#start-button").addEventListener('click', () => {
+                        this.data.enabled = true;
+                        this.startLightning();
+                    });
+                },
+                startLightning: function() {
+                   if(!this.data.enabled) return;
+                   
+                   // Bucle infinito que crea rayos
+                   this.timer = setInterval(() => {
+                        this.spawnBolt();
+                        // A veces crea un segundo rayo rápido para efecto de parpadeo
+                        if(Math.random() > 0.7) setTimeout(() => this.spawnBolt(), 150);
+                   }, this.data.interval + (Math.random() * 1000)); // Intervalo aleatorio
+                },
+                spawnBolt: function () {
+                    if (!this.el.sceneEl) return;
+
+                    const bolt = document.createElement('a-entity');
+                    
+                    // 1. Geometría: Un plano largo y muy delgado
+                    const height = 2 + Math.random() * 3; // Largo aleatorio entre 2m y 5m
+                    bolt.setAttribute('geometry', {
+                        primitive: 'plane',
+                        height: height,
+                        width: 0.02 + (Math.random() * 0.03) // Ancho variable
+                    });
+
+                    // 2. Material: El truco del "Additive Blending" para que parezca luz
+                    bolt.setAttribute('material', {
+                        shader: 'flat', // No necesita sombras
+                        color: this.data.color,
+                        transparent: true,
+                        opacity: 0.8,
+                        blending: 'additive', // ¡ESTO ES LA CLAVE DEL BRILLO!
+                        side: 'double'
+                    });
+
+                    // 3. Posición: Aleatoria alrededor del centro, pero un poco atrás
+                    const posX = (Math.random() - 0.5) * 4; // Entre -2 y 2
+                    const posY = 1 + Math.random() * 3;     // Entre 1m y 4m de altura
+                    const posZ = -1 - (Math.random() * 2); // Detrás del modelo
+                    bolt.setAttribute('position', `${posX} ${posY} ${posZ}`);
+
+                    // 4. Rotación: Inclinaciones aleatorias agresivas
+                    const rotX = (Math.random() - 0.5) * 60;
+                    const rotY = (Math.random() - 0.5) * 60;
+                    const rotZ = (Math.random() - 0.5) * 180; // Giro completo
+                    bolt.setAttribute('rotation', `${rotX} ${rotY} ${rotZ}`);
+
+                    // 5. Animación: Aparecer de golpe y desvanecerse (Flash)
+                    // Usamos 2 animaciones: una para la escala (crecer) y otra para la opacidad (desvanecer)
+                    bolt.setAttribute('animation__appear', {
+                        property: 'scale',
+                        from: '0.1 0 0.1',
+                        to: '1 1 1',
+                        dur: 50, // Aparece muy rápido (50ms)
+                        easing: 'easeOutQuad'
+                    });
+                    bolt.setAttribute('animation__fade', {
+                        property: 'material.opacity',
+                        from: 0.8,
+                        to: 0,
+                        dur: 400, // Tarda 400ms en desvanecerse
+                        delay: 50, // Empieza después de aparecer
+                        easing: 'linear'
+                    });
+
+                    // 6. Limpieza: Borrar el rayo cuando termina la animación para no saturar la memoria
+                    bolt.addEventListener('animationcomplete__fade', () => {
+                        if(bolt.parentNode) bolt.parentNode.removeChild(bolt);
+                    });
+
+                    this.el.sceneEl.appendChild(bolt);
+                },
+                remove: function() {
+                    if(this.timer) clearInterval(this.timer);
+                }
+            });
+
+            // --- COMPONENTES ANTERIORES (App Manager y Controller) ---
             AFRAME.registerComponent('app-manager', {
                 init: function () {
                     const model = document.querySelector("#animatedModel");
@@ -49,120 +122,28 @@
                     const startBtn = document.querySelector("#start-button");
                     const audio = document.querySelector("#bg-music");
                     const waBtn = document.querySelector("#whatsapp-button");
-
-                    model.addEventListener('model-loaded', () => {
-                        loadTxt.style.display = 'none';
-                        startBtn.style.display = 'block';
-                    });
-
+                    model.addEventListener('model-loaded', () => { loadTxt.style.display = 'none'; startBtn.style.display = 'block'; });
                     startBtn.addEventListener('click', () => {
-                        overlay.classList.add('fade-out');
-                        setTimeout(() => { overlay.style.display = 'none'; }, 800);
+                        overlay.classList.add('fade-out'); setTimeout(() => { overlay.style.display = 'none'; }, 800);
                         waBtn.style.display = 'block';
                         if(audio) { audio.volume = 1.0; audio.play(); }
                     });
                 }
             });
-
-            // --- CONTROLADOR DE GESTOS ROBUSTO ---
-            // Permite girar con 1 dedo y hacer zoom con 2 dedos sin mover la cámara.
             AFRAME.registerComponent('model-controller', {
-                schema: {
-                    speed: { default: 0.01 }, // Velocidad de rotación
-                    minScale: { default: 0.005 }, // Tamaño mínimo
-                    maxScale: { default: 0.2 }   // Tamaño máximo
-                },
+                schema: { speed: { default: 0.01 }, minScale: { default: 0.005 }, maxScale: { default: 0.2 } },
                 init: function () {
-                    this.startX = 0;
-                    this.startY = 0;
-                    this.initialScale = null;
-                    this.initialDistance = 0;
-                    this.isDragging = false;
-
-                    // Eventos Táctiles y de Mouse
-                    this.el.sceneEl.canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
-                    window.addEventListener('mousemove', this.onMouseMove.bind(this));
-                    window.addEventListener('mouseup', this.onMouseUp.bind(this));
-                    
-                    this.el.sceneEl.canvas.addEventListener('touchstart', this.onTouchStart.bind(this));
-                    window.addEventListener('touchmove', this.onTouchMove.bind(this));
-                    window.addEventListener('touchend', this.onTouchEnd.bind(this));
+                    this.startX = 0; this.startY = 0; this.initialScale = null; this.initialDistance = 0; this.isDragging = false;
+                    this.el.sceneEl.canvas.addEventListener('mousedown', this.onMouseDown.bind(this)); window.addEventListener('mousemove', this.onMouseMove.bind(this)); window.addEventListener('mouseup', this.onMouseUp.bind(this));
+                    this.el.sceneEl.canvas.addEventListener('touchstart', this.onTouchStart.bind(this)); window.addEventListener('touchmove', this.onTouchMove.bind(this)); window.addEventListener('touchend', this.onTouchEnd.bind(this));
                 },
-
-                // --- RATÓN (PC) ---
-                onMouseDown: function (e) {
-                    this.isDragging = true;
-                    this.startX = e.clientX;
-                    this.startY = e.clientY;
-                },
-                onMouseMove: function (e) {
-                    if (!this.isDragging) return;
-                    var deltaX = e.clientX - this.startX;
-                    var deltaY = e.clientY - this.startY;
-                    this.rotateModel(deltaX, deltaY);
-                    this.startX = e.clientX;
-                    this.startY = e.clientY;
-                },
+                onMouseDown: function (e) { this.isDragging = true; this.startX = e.clientX; this.startY = e.clientY; },
+                onMouseMove: function (e) { if (!this.isDragging) return; var deltaX = e.clientX - this.startX; this.rotateModel(deltaX); this.startX = e.clientX; this.startY = e.clientY; },
                 onMouseUp: function () { this.isDragging = false; },
-
-                // --- TÁCTIL (MÓVIL) ---
-                onTouchStart: function (e) {
-                    if (e.touches.length === 1) {
-                        // Un dedo: Preparar rotación
-                        this.startX = e.touches[0].clientX;
-                        this.startY = e.touches[0].clientY;
-                        this.isDragging = true;
-                    } else if (e.touches.length === 2) {
-                        // Dos dedos: Preparar Zoom (Escala)
-                        this.isDragging = false; // Desactiva rotación para no marear
-                        var dx = e.touches[0].clientX - e.touches[1].clientX;
-                        var dy = e.touches[0].clientY - e.touches[1].clientY;
-                        this.initialDistance = Math.sqrt(dx * dx + dy * dy);
-                        this.initialScale = this.el.object3D.scale.clone();
-                    }
-                },
-                onTouchMove: function (e) {
-                    if (e.touches.length === 1 && this.isDragging) {
-                        // Rotar
-                        var deltaX = e.touches[0].clientX - this.startX;
-                        var deltaY = e.touches[0].clientY - this.startY;
-                        this.rotateModel(deltaX, deltaY);
-                        this.startX = e.touches[0].clientX;
-                        this.startY = e.touches[0].clientY;
-                    } else if (e.touches.length === 2 && this.initialScale) {
-                        // Escalar (Pinch Zoom)
-                        var dx = e.touches[0].clientX - e.touches[1].clientX;
-                        var dy = e.touches[0].clientY - e.touches[1].clientY;
-                        var currentDistance = Math.sqrt(dx * dx + dy * dy);
-                        
-                        var scaleFactor = currentDistance / this.initialDistance;
-                        
-                        var newX = this.initialScale.x * scaleFactor;
-                        var newY = this.initialScale.y * scaleFactor;
-                        var newZ = this.initialScale.z * scaleFactor;
-
-                        // Limites de zoom
-                        newX = Math.min(Math.max(newX, this.data.minScale), this.data.maxScale);
-                        newY = Math.min(Math.max(newY, this.data.minScale), this.data.maxScale);
-                        newZ = Math.min(Math.max(newZ, this.data.minScale), this.data.maxScale);
-
-                        this.el.object3D.scale.set(newX, newY, newZ);
-                    }
-                },
-                onTouchEnd: function () {
-                    this.isDragging = false;
-                    this.initialDistance = 0;
-                },
-
-                // Lógica de Rotación
-                rotateModel: function (deltaX, deltaY) {
-                    // Rotación Horizontal (Y)
-                    this.el.object3D.rotation.y += deltaX * this.data.speed;
-                    
-                    // Rotación Vertical (X) - Con límites para que no de la vuelta completa rara
-                    // this.el.object3D.rotation.x += deltaY * this.data.speed; 
-                    // (Opcional: Descomenta la línea de arriba si quieres girar arriba/abajo también)
-                }
+                onTouchStart: function (e) { if (e.touches.length === 1) { this.startX = e.touches[0].clientX; this.startY = e.touches[0].clientY; this.isDragging = true; } else if (e.touches.length === 2) { this.isDragging = false; var dx = e.touches[0].clientX - e.touches[1].clientX; var dy = e.touches[0].clientY - e.touches[1].clientY; this.initialDistance = Math.sqrt(dx * dx + dy * dy); this.initialScale = this.el.object3D.scale.clone(); } },
+                onTouchMove: function (e) { if (e.touches.length === 1 && this.isDragging) { var deltaX = e.touches[0].clientX - this.startX; this.rotateModel(deltaX); this.startX = e.touches[0].clientX; this.startY = e.touches[0].clientY; } else if (e.touches.length === 2 && this.initialScale) { var dx = e.touches[0].clientX - e.touches[1].clientX; var dy = e.touches[0].clientY - e.touches[1].clientY; var currentDistance = Math.sqrt(dx * dx + dy * dy); var scaleFactor = currentDistance / this.initialDistance; var newX = Math.min(Math.max(this.initialScale.x * scaleFactor, this.data.minScale), this.data.maxScale); var newY = Math.min(Math.max(this.initialScale.y * scaleFactor, this.data.minScale), this.data.maxScale); var newZ = Math.min(Math.max(this.initialScale.z * scaleFactor, this.data.minScale), this.data.maxScale); this.el.object3D.scale.set(newX, newY, newZ); } },
+                onTouchEnd: function () { this.isDragging = false; this.initialDistance = 0; },
+                rotateModel: function (deltaX) { this.el.object3D.rotation.y += deltaX * this.data.speed; }
             });
         </script>
     </head>
@@ -173,17 +154,14 @@
             <div id="loading-text">Cargando Modelo 3D...</div>
             <button id="start-button">VER<br>EXPERIENCIA</button>
         </div>
-
-        <a href="https://wa.me/593983088889" target="_blank" id="whatsapp-button">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp">
-        </a>
-
+        <a href="https://wa.me/593983088889" target="_blank" id="whatsapp-button"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp"></a>
         <audio id="bg-music" src="assets/audio.mp3" loop></audio>
 
         <a-scene 
-            app-manager 
+            app-manager
+            lightning-system="color: #00eaff; interval: 2000" 
             loading-screen="enabled: false" 
-            background="color: #252525"
+            background="color: #1a1a1a" 
             renderer="colorManagement: true; antialias: true; highRefreshRate: true;"
             vr-mode-ui="enabled: false">
             
@@ -191,19 +169,22 @@
                 <a-asset-item id="modeloGLB" src="assets/tanjirofinal4.glb"></a-asset-item>
             </a-assets>
 
-            <a-light type="ambient" color="#ffffff" intensity="1"></a-light>
-            <a-light type="directional" position="2 4 5" intensity="1.5" castShadow="true"></a-light>
-            <a-light type="point" position="-2 2 -2" intensity="0.5" color="#ffd700"></a-light> <a-entity camera position="0 1.5 2" look-controls="enabled: false"></a-entity>
+            <a-light type="ambient" color="#ffffff" intensity="0.8"></a-light>
+            <a-light type="directional" position="2 4 5" intensity="1.2"></a-light>
+            <a-light type="point" position="-2 3 -2" intensity="0.8" color="#00eaff" distance="10"></a-light>
+
+            <a-entity camera position="0 1.5 2" look-controls="enabled: false"></a-entity>
 
             <a-entity 
                 id="animatedModel"
                 gltf-model="#modeloGLB"
-                position="0 0.5 -1"
-                scale="0.01 0.01 0.01"
+                position="0 0 -1"
+                scale="0.012 0.012 0.012"
                 rotation="0 0 0"
                 animation-mixer="loop: repeat"
                 model-controller="minScale: 0.005; maxScale: 0.05" 
             ></a-entity>
-            </a-scene>
+
+        </a-scene>
     </body>
 </html>
