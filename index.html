@@ -7,7 +7,6 @@
         <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
         <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
 
-        
         <style>
             body { margin: 0; overflow: hidden; touch-action: none; font-family: Arial, sans-serif;}
             
@@ -23,10 +22,10 @@
 
             /* ESTILOS DEL BOTÓN DE WHATSAPP */
             #whatsapp-button {
-                display: none; 
+                display: block; /* Siempre visible ahora */
                 position: fixed;
                 bottom: 15px; 
-                left: 15px;      
+                left: 15px;       
                 z-index: 9998;
                 background-color: transparent;
                 padding: 0;
@@ -57,49 +56,32 @@
                                 node.material.needsUpdate = true;
                             }
                         });
-                        console.log("Materiales corregidos (Metalness removido)");
+                        console.log("Materiales corregidos");
                     });
                 }
             });
 
-            // --- COMPONENTE 2: CONTROLADOR PRINCIPAL (Gestos y Video) ---
+            // --- COMPONENTE 2: CONTROLADOR PRINCIPAL SIMPLIFICADO ---
             AFRAME.registerComponent('master-controller', {
                 init: function () {
-                    this.marker = document.querySelector("#markerA");
-                    this.hud = document.querySelector("#hud-container");
-                    
                     this.vid = document.querySelector("#vid");
                     this.model = document.querySelector("#animatedModel");
-                    this.waButton = document.querySelector("#whatsapp-button");
                     
-                    this.isUnlocked = false; 
-                    
+                    // Variables para gestos
                     this.startX = 0;
                     this.startY = 0;
                     this.initialDistance = 0;
                     this.initialScaleVector = new THREE.Vector3();
 
-                    this.marker.addEventListener('markerFound', () => {
-                        if (this.isUnlocked) return;
-                        console.log("¡Marcador detectado!");
-                        this.isUnlocked = true;
-                        
-                        this.hud.setAttribute('visible', 'true');
-                        this.waButton.style.display = "block"; 
-                        
-                        if(this.vid){
-                            this.vid.play().catch(e => console.log("Error reproduciendo audio:", e));
-                            this.vid.volume = 1.0; 
-                        }
+                    // Intentar reproducir video/animación al inicio si es posible
+                    if (this.model) this.model.setAttribute('animation-mixer', 'timeScale: 1');
 
-                        if (this.model) this.model.setAttribute('animation-mixer', 'timeScale: 1');
-                    });
-
+                    // INTERACCIÓN TÁCTIL (Touch Start)
                     window.addEventListener('touchstart', (e) => {
-                        if (!this.isUnlocked) return;
-                        
+                        // Reproducir video al primer toque (necesario por políticas de navegadores)
                         if(this.vid && this.vid.paused){
-                            this.vid.play();
+                            this.vid.play().catch(e => console.log("Audio/Video error:", e));
+                            this.vid.volume = 1.0; 
                         }
 
                         if(e.touches.length === 1) {
@@ -113,9 +95,8 @@
                         }
                     });
 
+                    // INTERACCIÓN TÁCTIL (Touch Move - Rotación y Escalado)
                     window.addEventListener('touchmove', (e) => {
-                        if (!this.isUnlocked) return;
-                        
                         if(e.touches.length === 1) {
                             var deltaX = e.touches[0].clientX - this.startX;
                             var deltaY = e.touches[0].clientY - this.startY;
@@ -125,14 +106,15 @@
 
                             // Rotación Y (Horizontal)
                             var newRotationY = this.model.object3D.rotation.y + (deltaX * 0.01);
-                            const minY = -0.8;
-                            const maxY = 0.8;
-                            this.model.object3D.rotation.y = Math.min(Math.max(newRotationY, minY), maxY);
+                            // Limites de giro horizontal (puedes quitarlos si quieres giro 360)
+                            // const minY = -0.8; const maxY = 0.8;
+                            // this.model.object3D.rotation.y = Math.min(Math.max(newRotationY, minY), maxY);
+                            this.model.object3D.rotation.y = newRotationY; // Giro libre
 
                             // Rotación X (Vertical)
                             var newRotationX = this.model.object3D.rotation.x + (deltaY * 0.01);
-                            const minX = 0.0; 
-                            const maxX = 0.8;
+                            const minX = -0.5; 
+                            const maxX = 0.5;
                             this.model.object3D.rotation.x = Math.min(Math.max(newRotationX, minX), maxX);
                         } 
                         else if (e.touches.length === 2 && this.initialDistance > 0) {
@@ -146,11 +128,8 @@
                              var newY = this.initialScaleVector.y * scaleFactor;
                              var newZ = this.initialScaleVector.z * scaleFactor;
 
-                             // --- AQUI ESTA EL CAMBIO IMPORTANTE ---
-                             // minScale está puesto exactamente en 0.012 (tu tamaño original)
-                             // Esto permite agrandar y volver a achicar, pero NUNCA bajar de 0.012
                              const minScale = 0.012; 
-                             const maxScale = 0.35;  
+                             const maxScale = 0.55;  
 
                              newX = Math.min(Math.max(newX, minScale), maxScale);
                              newY = Math.min(Math.max(newY, minScale), maxScale);
@@ -165,8 +144,8 @@
             window.addEventListener('arjs-video-loaded', function(e) {
                 setTimeout(() => { document.body.classList.add('arjs-ready'); }, 1000);
             });
-            // Fallback
-            setTimeout(() => { document.body.classList.add('arjs-ready'); }, 6000);
+            // Fallback de carga
+            setTimeout(() => { document.body.classList.add('arjs-ready'); }, 5000);
         </script>
     </head>
 
@@ -197,13 +176,13 @@
             <a-entity light="type: directional; intensity: 2" position="2 4 4"></a-entity>
 
             <a-entity camera>
-                <a-entity id="hud-container" visible="false" position="0 0 -6">
+                <a-entity id="hud-container" position="0 -1.5 -6"> 
                     
                     <a-entity
                         id="animatedModel"
                         gltf-model="#miModelo"
                         scale="0.012 0.012 0.012"
-                        position="0 -1.5 0" 
+                        position="0 0 0" 
                         rotation="0 0 0" 
                         animation-mixer="loop: repeat"
                         fix-materials
@@ -211,9 +190,6 @@
 
                 </a-entity>
             </a-entity>
-
-            <a-marker type="pattern" preset="custom" url="assets/marker.patt" id="markerA">
-            </a-marker>
 
         </a-scene>
     </body>
