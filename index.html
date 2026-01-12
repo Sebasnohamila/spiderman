@@ -45,24 +45,7 @@
         </style>
 
         <script>
-            // --- COMPONENTE 1: ARREGLAR MATERIALES NEGROS ---
-            AFRAME.registerComponent('fix-materials', {
-                init: function () {
-                    this.el.addEventListener('model-loaded', function (e) {
-                        var mesh = e.detail.model;
-                        mesh.traverse(function (node) {
-                            if (node.isMesh && node.material) {
-                                node.material.metalness = 0;
-                                node.material.roughness = 1;
-                                node.material.needsUpdate = true;
-                            }
-                        });
-                        console.log("Materiales corregidos (Metalness removido)");
-                    });
-                }
-            });
-
-            // --- COMPONENTE 2: CONTROLADOR PRINCIPAL (Gestos y Video) ---
+            // --- COMPONENTE CONTROLADOR PRINCIPAL (Gestos y Video) ---
             AFRAME.registerComponent('master-controller', {
                 init: function () {
                     this.marker = document.querySelector("#markerA");
@@ -146,9 +129,6 @@
                              var newY = this.initialScaleVector.y * scaleFactor;
                              var newZ = this.initialScaleVector.z * scaleFactor;
 
-                             // --- AQUI ESTA EL CAMBIO IMPORTANTE ---
-                             // minScale está puesto exactamente en 0.012 (tu tamaño original)
-                             // Esto permite agrandar y volver a achicar, pero NUNCA bajar de 0.012
                              const minScale = 0.012; 
                              const maxScale = 0.35;  
 
@@ -207,7 +187,6 @@
                         position="0 -1.5 0" 
                         rotation="0 0 0" 
                         animation-mixer="loop: repeat"
-                        fix-materials
                     ></a-entity>
 
                 </a-entity>
