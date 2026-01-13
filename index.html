@@ -3,14 +3,14 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-        <title>Visor 3D Pro - Orbit Controls</title>
+        <title>Visor 3D Bhastian - Estrellas Neón</title>
 
         <script src="https://aframe.io/releases/1.0.4/aframe.min.js"></script>
         <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
 
         <style>
             body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; background-color: #111; }
-            /* --- INTERFAZ (Igual que antes) --- */
+            /* ESTILOS DE INTERFAZ (Sin cambios) */
             #overlay-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #ffffff 0%, #e0e0e0 100%); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.8s ease-out; }
             #overlay-logo { max-width: 50%; height: auto; margin-bottom: 20px; }
             #loading-text { font-size: 16px; color: #666; animation: blink 1.5s infinite; }
@@ -23,32 +23,25 @@
         </style>
 
         <script>
-            // --- GESTOR DE APP (Carga y Audio) ---
-            AFRAME.registerComponent('app-manager', {
-                init: function () {
-                    const model = document.querySelector("#animatedModel");
-                    const overlay = document.querySelector("#overlay-container");
-                    const loadTxt = document.querySelector("#loading-text");
-                    const startBtn = document.querySelector("#start-button");
-                    const audio = document.querySelector("#bg-music");
-                    const waBtn = document.querySelector("#whatsapp-button");
-                    model.addEventListener('model-loaded', () => { loadTxt.style.display = 'none'; startBtn.style.display = 'block'; });
-                    startBtn.addEventListener('click', () => {
-                        overlay.classList.add('fade-out'); setTimeout(() => { overlay.style.display = 'none'; }, 800);
-                        waBtn.style.display = 'block';
-                        if(audio) { audio.volume = 1.0; audio.play(); }
-                    });
-                }
-            });
-
-            // --- SISTEMA DE ESTRELLAS FUGACES NEÓN (Mismo de antes) ---
+            // --- SISTEMA DE ESTRELLAS FUGACES NEÓN ---
             AFRAME.registerComponent('shooting-stars-system', {
-                schema: { color: { default: '#ff073a' }, minInterval: { default: 800 }, maxInterval: { default: 2500 } },
+                schema: {
+                    color: { default: '#ff073a' }, 
+                    minInterval: { default: 800 }, 
+                    maxInterval: { default: 2500 } 
+                },
                 init: function () {
                     this.isRunning = false;
-                    document.querySelector("#start-button").addEventListener('click', () => { this.isRunning = true; this.scheduleNextStar(); });
+                    document.querySelector("#start-button").addEventListener('click', () => {
+                        this.isRunning = true;
+                        this.scheduleNextStar();
+                    });
                 },
-                scheduleNextStar: function () { if (!this.isRunning) return; const delay = Math.random() * (this.data.maxInterval - this.data.minInterval) + this.data.minInterval; setTimeout(() => { this.spawnStar(); this.scheduleNextStar(); }, delay); },
+                scheduleNextStar: function () {
+                    if (!this.isRunning) return;
+                    const delay = Math.random() * (this.data.maxInterval - this.data.minInterval) + this.data.minInterval;
+                    setTimeout(() => { this.spawnStar(); this.scheduleNextStar(); }, delay);
+                },
                 spawnStar: function () {
                     if (!this.el.sceneEl) return;
                     const star = document.createElement('a-entity');
@@ -56,18 +49,54 @@
                     const startPos = new THREE.Vector3(side * (15 + Math.random() * 10), 10 + Math.random() * 5, -25);
                     const endPos = new THREE.Vector3(-side * (15 + Math.random() * 10), -5 - Math.random() * 5, -25);
                     const length = 5 + Math.random() * 5;
+                    
                     star.setAttribute('geometry', { primitive: 'plane', height: length, width: 0.04 });
-                    star.setAttribute('material', { shader: 'standard', color: this.data.color, emissive: this.data.color, emissiveIntensity: 4, transparent: true, opacity: 0.9, blending: 'additive', side: 'double' });
+                    star.setAttribute('material', {
+                        shader: 'standard', color: this.data.color, emissive: this.data.color, 
+                        emissiveIntensity: 4, transparent: true, opacity: 0.9, blending: 'additive', side: 'double'
+                    });
                     star.object3D.position.copy(startPos);
                     star.object3D.lookAt(endPos);
                     star.object3D.rotateX(Math.PI / 2);
+
                     const duration = 1000 + Math.random() * 1000;
-                    star.setAttribute('animation__move', { property: 'position', to: `${endPos.x} ${endPos.y} ${endPos.z}`, dur: duration, easing: 'linear' });
-                    star.setAttribute('animation__fade', { property: 'material.opacity', from: 0.9, to: 0, dur: duration * 0.8, delay: duration * 0.2, easing: 'linear' });
-                    star.addEventListener('animationcomplete__move', () => { if(star.parentNode) star.parentNode.removeChild(star); });
+                    star.setAttribute('animation__move', {
+                        property: 'position', to: `${endPos.x} ${endPos.y} ${endPos.z}`, dur: duration, easing: 'linear'
+                    });
+                    star.setAttribute('animation__fade', {
+                        property: 'material.opacity', from: 0.9, to: 0, dur: duration * 0.8, delay: duration * 0.2, easing: 'linear'
+                    });
+                    star.addEventListener('animationcomplete__move', () => {
+                        if(star.parentNode) star.parentNode.removeChild(star);
+                    });
                     this.el.sceneEl.appendChild(star);
                 }
             });
+
+            // --- APP MANAGER ---
+            AFRAME.registerComponent('app-manager', { 
+                init: function () { 
+                    const model = document.querySelector("#animatedModel"); 
+                    const overlay = document.querySelector("#overlay-container"); 
+                    const loadTxt = document.querySelector("#loading-text"); 
+                    const startBtn = document.querySelector("#start-button"); 
+                    const audio = document.querySelector("#bg-music"); 
+                    const waBtn = document.querySelector("#whatsapp-button"); 
+                    
+                    model.addEventListener('model-loaded', () => { 
+                        loadTxt.style.display = 'none'; 
+                        startBtn.style.display = 'block'; 
+                    }); 
+                    startBtn.addEventListener('click', () => { 
+                        overlay.classList.add('fade-out'); 
+                        setTimeout(() => { overlay.style.display = 'none'; }, 800); 
+                        waBtn.style.display = 'block'; 
+                        if(audio) { audio.volume = 1.0; audio.play(); } 
+                    }); 
+                } 
+            });
+            
+            // NOTA: Se ha eliminado 'model-controller' para usar el sistema nativo de órbita y paneo
         </script>
     </head>
 
@@ -85,7 +114,7 @@
             shooting-stars-system="color: #ff073a"
             loading-screen="enabled: false" 
             background="color: #080000" 
-            renderer="colorManagement: true; antialias: true; logarithmicDepthBuffer: true;"
+            renderer="colorManagement: true; antialias: true;"
             vr-mode-ui="enabled: false">
             
             <a-assets>
@@ -98,22 +127,22 @@
 
             <a-entity 
                 camera 
-                look-controls="enabled: false" 
+                position="0 1.5 2" 
                 orbit-controls="
-                    target: 0 0.8 0; 
-                    minDistance: 0.5; 
-                    maxDistance: 3; 
-                    initialPosition: 0 1.2 2.5; 
-                    enablePan: false;
-                    rotateSpeed: 0.5;
-                    zoomSpeed: 1;
+                    target: 0 0.5 -1; 
+                    enableDamping: true; 
+                    dampingFactor: 0.1; 
+                    rotateSpeed: 0.5; 
+                    minDistance: 0.3; 
+                    maxDistance: 5;
+                    panSpeed: 0.8;
                 ">
             </a-entity>
 
             <a-entity 
                 id="animatedModel"
                 gltf-model="#modeloGLB"
-                position="0 0 0" 
+                position="0 0.5 -1"
                 scale="0.012 0.012 0.012"
                 rotation="0 0 0"
                 animation-mixer="loop: repeat"
